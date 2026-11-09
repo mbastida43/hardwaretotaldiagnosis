@@ -2,7 +2,7 @@
 
 # 🔍 Hardware Total Diagnosis
 
-**Um raio-X completo do seu computador em um único arquivo de texto.**
+**Um raio-X completo do seu computador em um único arquivo, em texto ou HTML.**
 
 Sem instalar nada. Sem senha de administrador. Sem internet.
 
@@ -26,7 +26,7 @@ Sem instalar nada. Sem senha de administrador. Sem internet.
 
 ## 💡 O que é isto?
 
-É um programa pequeno, de um único arquivo, que **pergunta ao Windows tudo o que ele sabe sobre o hardware** do computador e escreve as respostas em um arquivo de texto.
+É um programa pequeno, de um único arquivo, que **pergunta ao Windows tudo o que ele sabe sobre o hardware** do computador e escreve as respostas em um arquivo de texto ou em uma página HTML, à sua escolha.
 
 Pense nele como a ficha médica do computador: processador, memória, placa de vídeo, discos, portas USB, teclado, mouse, receptores sem fio, drivers e os erros registrados recentemente, tudo em um só lugar.
 
@@ -88,6 +88,8 @@ Copie a linha abaixo, clique com o **botão direito** dentro da janela do PowerS
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1
 ```
 
+O programa pergunta o formato do relatório: digite **`TXT`** (texto puro, o padrão ao apertar Enter) ou **`HTML`** (página com menu lateral, resumo e seções recolhíveis, que abre no navegador e funciona sem internet).
+
 Os nomes das etapas vão aparecendo na tela. A coleta costuma levar de alguns segundos a poucos minutos.
 
 > [!NOTE]
@@ -101,7 +103,7 @@ Ao terminar, aparece uma mensagem como esta:
 Done in 18 s. Report: C:\Users\voce\Downloads\hardwaretotaldiagnosis\HardwareReport_MEUPC_20260115_143022.txt
 ```
 
-O arquivo fica **na mesma pasta do programa** e abre no Bloco de Notas. Se essa pasta não permitir gravação, ele é salvo na pasta temporária do usuário, e o caminho exato aparece nessa mensagem.
+O arquivo fica **na mesma pasta do programa** e abre no Bloco de Notas (`.txt`) ou no navegador (`.html`). Se essa pasta não permitir gravação, ele é salvo na pasta temporária do usuário, e o caminho exato aparece nessa mensagem.
 
 > [!TIP]
 > **Vai investigar teclado ou mouse sem fio?** Mexa o mouse e aperte uma tecla logo antes de rodar. Dispositivos sem fio "dormem" para poupar bateria e, nesse estado, aparecem como sem conexão.
@@ -153,13 +155,13 @@ O relatório foi pensado para poder ser compartilhado, mas **vale conferir antes
 | Chave e ID do produto Windows | Lista de drivers e de programas relacionados a hardware |
 
 > [!IMPORTANT]
-> O arquivo é texto puro. Se quiser ocultar algum dado, abra no Bloco de Notas, apague o trecho e salve.
+> Se quiser ocultar algum dado, gere o relatório em TXT, que é texto puro: abra no Bloco de Notas, apague o trecho e salve.
 
 ---
 
 ## 📖 Como ler o relatório
 
-O arquivo é dividido em seções com títulos em inglês, o que facilita o envio a suportes técnicos internacionais. Use **Ctrl+F** no Bloco de Notas para ir direto ao que interessa:
+O arquivo é dividido em seções com títulos em inglês, o que facilita o envio a suportes técnicos internacionais. Use **Ctrl+F** no Bloco de Notas, ou o filtro do menu lateral no HTML, para ir direto ao que interessa:
 
 | Procure por | Para ver |
 |---|---|
@@ -199,7 +201,7 @@ Cada `Slot` é uma "vaga" do receptor. Nesse exemplo, ele conhece um mouse e um 
 
 ### Comparando dois computadores
 
-Gere o relatório em cada máquina e abra os dois lado a lado. As seções saem sempre na mesma ordem. Para uma comparação automática, rode:
+Gere o relatório em TXT em cada máquina e abra os dois lado a lado. As seções saem sempre na mesma ordem. Para uma comparação automática, rode:
 
 ```powershell
 code --diff .\relatorio_pc1.txt .\relatorio_pc2.txt
@@ -281,7 +283,8 @@ O PowerShell não está na pasta certa. Repita o [passo 3](#-como-usar-passo-a-p
 
 | Opção | O que faz |
 |---|---|
-| `-OutFile <caminho>` | Define onde salvar o relatório |
+| `-Format TXT` ou `-Format HTML` | Escolhe o formato sem perguntar |
+| `-OutFile <caminho>` | Define onde salvar o relatório. Sem `-Format`, o formato vem da extensão (`.html` gera HTML, qualquer outra gera TXT) |
 | `-SelfTest` | Confere a decodificação das respostas dos receptores e encerra, sem gerar relatório |
 
 ```powershell
@@ -310,7 +313,7 @@ Distribuído sob a [Licença MIT](LICENSE). © 2026 Marlon Bastida.
 
 # 🔍 Hardware Total Diagnosis
 
-**A complete X-ray of your computer in a single text file.**
+**A complete X-ray of your computer in a single file, as text or HTML.**
 
 Nothing to install. No administrator password. No internet.
 
@@ -332,7 +335,7 @@ Nothing to install. No administrator password. No internet.
 
 ## 💡 What is this?
 
-It is a small, single-file program that **asks Windows everything it knows about the computer's hardware** and writes the answers to a text file.
+It is a small, single-file program that **asks Windows everything it knows about the computer's hardware** and writes the answers to a text file or an HTML page, whichever you choose.
 
 Think of it as the computer's medical record: processor, memory, graphics card, disks, USB ports, keyboard, mouse, wireless receivers, drivers and recently logged errors, all in one place.
 
@@ -394,6 +397,8 @@ Copy the line below, **right-click** inside the PowerShell window to paste it, a
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1
 ```
 
+The program asks for the report format: type **`TXT`** (plain text, the default when you press Enter) or **`HTML`** (a page with a side menu, summary and collapsible sections that opens in the browser and works without internet).
+
 The name of each stage appears on the screen as it runs. Collection usually takes from a few seconds to a few minutes.
 
 > [!NOTE]
@@ -407,7 +412,7 @@ When it finishes, a message like this appears:
 Done in 18 s. Report: C:\Users\you\Downloads\hardwaretotaldiagnosis\HardwareReport_MYPC_20260115_143022.txt
 ```
 
-The file is saved **in the same folder as the program** and opens in Notepad. If that folder cannot be written to, it is saved in the user's temporary folder, and the exact path appears in this message.
+The file is saved **in the same folder as the program** and opens in Notepad (`.txt`) or in the browser (`.html`). If that folder cannot be written to, it is saved in the user's temporary folder, and the exact path appears in this message.
 
 > [!TIP]
 > **Investigating a wireless keyboard or mouse?** Move the mouse and press a key right before running it. Wireless devices "sleep" to save battery and, in that state, show up as not connected.
@@ -459,13 +464,13 @@ The report is designed to be shareable, but **it is worth checking it before sen
 | Windows product key and ID | List of drivers and hardware-related programs |
 
 > [!IMPORTANT]
-> The file is plain text. To hide any data, open it in Notepad, delete the passage and save.
+> To hide any data, generate the report as TXT, which is plain text: open it in Notepad, delete the passage and save.
 
 ---
 
 ## 📖 How to read the report
 
-The file is divided into sections with English titles, which makes it easy to send to international technical support. Use **Ctrl+F** in Notepad to jump straight to what you need:
+The file is divided into sections with English titles, which makes it easy to send to international technical support. Use **Ctrl+F** in Notepad, or the side menu filter in the HTML, to jump straight to what you need:
 
 | Search for | To see |
 |---|---|
@@ -505,7 +510,7 @@ Each `Slot` is a position on the receiver. In this example, it knows one mouse a
 
 ### Comparing two computers
 
-Generate the report on each machine and open both side by side. The sections always come out in the same order. For an automatic comparison, run:
+Generate the report as TXT on each machine and open both side by side. The sections always come out in the same order. For an automatic comparison, run:
 
 ```powershell
 code --diff .\report_pc1.txt .\report_pc2.txt
@@ -587,7 +592,8 @@ PowerShell is not in the right folder. Repeat [step 3](#-how-to-use-step-by-step
 
 | Option | What it does |
 |---|---|
-| `-OutFile <path>` | Sets where the report is saved |
+| `-Format TXT` or `-Format HTML` | Picks the format without asking |
+| `-OutFile <path>` | Sets where the report is saved. Without `-Format`, the format comes from the extension (`.html` produces HTML, anything else TXT) |
 | `-SelfTest` | Checks the decoding of receiver replies and exits without generating a report |
 
 ```powershell

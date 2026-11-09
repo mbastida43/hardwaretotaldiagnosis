@@ -2,14 +2,14 @@
 .SYNOPSIS
     Read-only, full hardware report for Windows 10/11. Does not need administrator rights.
 .DESCRIPTION
-    Writes a plain-text report. Anything Windows refuses to a standard user is recorded
+    Writes a plain-text or a self-contained HTML report. Anything Windows refuses to a standard user is recorded
     in the report as unavailable and the run continues.
     The only device I/O is HID++ read/ping queries to Logitech receivers; nothing is changed.
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1
 #>
 [CmdletBinding()]
-param([string]$OutFile, [switch]$SelfTest)
+param([string]$OutFile, [ValidateSet('TXT', 'HTML')][string]$Format, [switch]$SelfTest)
 
 $ErrorActionPreference = 'Continue'
 
@@ -64,7 +64,41 @@ function Section {
     Write-Host "  $Title"
     $line = '=' * 100
     $text = try { & $Body 2>&1 | Out-String -Width 400 } catch { "[SECTION FAILED] $($_.Exception.Message)" }
+    if ($Format -eq 'HTML') {
+        $id = "s$($script:htmlNav.Count)"
+        $html = ConvertTo-HtmlBody $text
+        $flag = if ($html -match 'class="bad"') { ' class="flag"' }
+        $script:htmlNav += "<a href=`"#$id`"$flag>$(Esc $Title)</a>"
+        $script:htmlMain += "<details id=`"$id`"><summary$flag>$(Esc $Title)</summary><div class=`"body`">$html</div></details>"
+        return
+    }
     "`r`n$line`r`n$Title`r`n$line`r`n$text" | Out-File -FilePath $OutFile -Append -Encoding utf8
+}
+
+# String operators only: System.Web and similar types are refused in constrained language mode.
+function Esc { param([string]$s) $s -replace '&', '&amp;' -replace '<', '&lt;' -replace '>', '&gt;' }
+
+function Mark {
+    param([string]$s)
+    $s -creplace '\[OK\]|\bONLINE\b', '<b class="ok">$0</b>' -creplace '\[(unavailable|cannot open[^\]]*|Unknown)\]|\bno link now\b', '<b class="w">$0</b>' -creplace '\[(Error|Degraded|SECTION FAILED)\]', '<b class="bad">$0</b>'
+}
+
+# Turns the text of one section into HTML: headings, key/value lists, and <pre> for everything else (tables, trees).
+function ConvertTo-HtmlBody {
+    param([string]$Text)
+    $close = @{ '' = ''; dl = '</dl>'; pre = '</pre>' }
+    $kind = ''
+    $out = foreach ($line in ($Text -split '\r?\n')) {
+        $line = $line.TrimEnd()
+        if (-not $line) { $new = if ($kind -eq 'pre') { 'pre' } else { '' }; $row = '' }
+        elseif ($line -match '^--- (.*[^-\s].*) ---$') { $new = ''; $row = "<h3>$(Esc $Matches[1])</h3>" }
+        elseif ($line -match '^##### (.+)$') { $new = ''; $row = "<h4>$(Esc $Matches[1])</h4>" }
+        elseif ($line -match '^([^\s:\[][^:]{0,47}?)\s*: (.*)$') { $new = 'dl'; $row = "<dt>$(Esc $Matches[1])</dt><dd>$(Mark (Esc $Matches[2]))</dd>" }
+        else { $new = 'pre'; $row = Mark (Esc $line) }
+        if ($new -ne $kind) { $close[$kind]; if ($new) { "<$new>" }; $kind = $new }
+        $row
+    }
+    (@($out) + $close[$kind]) -join "`n" -replace '<pre>\n+', '<pre>' -replace '\n+</pre>', '</pre>' -replace '<pre></pre>', ''
 }
 
 function Hex { param($Bytes) if ($null -eq $Bytes) { '(no reply)' } else { ($Bytes | ForEach-Object { '{0:X2}' -f $_ }) -join ' ' } }
@@ -127,12 +161,30 @@ if ($SelfTest) {
         ((Read-Ping ([byte[]](0x10,1,0x8F,0,0x1D,9,0))) -like 'no link now*'),
         ((Read-Ping $null) -eq 'no reply')
     )
+    $h = ConvertTo-HtmlBody "--- Win32_BIOS (root/cimv2) ---`r`nName     : A<i>&`r`n`r`n[unavailable] denied: x`r`n--- --- ---`r`n  [OK] ONLINE Online`r`n"
+    $checks += @(
+        ($h -like '*<h3>Win32_BIOS (root/cimv2)</h3>*'),
+        ($h -like '*<dl>*<dt>Name</dt><dd>A&lt;i&gt;&amp;</dd>*</dl>*'),
+        ($h -like '*<pre><b class="w">`[unavailable`]</b> denied: x*'),
+        ($h -like '*--- --- ---*'),
+        ($h -clike '*<b class="ok">`[OK`]</b> <b class="ok">ONLINE</b> Online</pre>*'),
+        ($h -notlike '*<i>*')
+    )
     if ($checks -contains $false) { Write-Host "SELFTEST FAILED: $($checks -join ',')"; exit 1 }
     Write-Host 'SELFTEST OK'; exit 0
 }
 
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$fileName = "HardwareReport_${env:COMPUTERNAME}_$stamp.txt"
+if (-not $Format) {
+    if ($OutFile) { $Format = if ($OutFile -match '\.html?$') { 'HTML' } else { 'TXT' } }
+    else {
+        # Read-Host throws under -NonInteractive; TXT is the default there too.
+        try { do { $answer = "$(Read-Host 'Report format - type TXT or HTML (Enter = TXT)')".Trim() } until ($answer -in '', 'TXT', 'HTML') } catch { $answer = '' }
+        $Format = if ($answer) { $answer } else { 'TXT' }
+    }
+}
+$htmlNav = @(); $htmlMain = @()
+$fileName = "HardwareReport_${env:COMPUTERNAME}_$stamp.$($Format.ToLower())"
 if (-not $OutFile) { $OutFile = Join-Path $PSScriptRoot $fileName }
 try { "HARDWARE REPORT" | Out-File -FilePath $OutFile -Encoding utf8 -ErrorAction Stop }
 catch { $OutFile = Join-Path $env:TEMP $fileName; "HARDWARE REPORT" | Out-File -FilePath $OutFile -Encoding utf8 }
@@ -555,5 +607,78 @@ Section 'EVENT LOGS, LAST 30 DAYS' {
 }
 
 $elapsed = [int]((Get-Date) - $started).TotalSeconds
-"`r`nEND OF REPORT ($elapsed s)" | Out-File -FilePath $OutFile -Append -Encoding utf8
+if ($Format -eq 'HTML') {
+    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+    $cards = [ordered]@{
+        Computer = $env:COMPUTERNAME
+        Windows = "$($os.Caption) (build $($os.BuildNumber))"
+        Processor = @(Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue | ForEach-Object Name) -join ', '
+        Memory = '{0:N0} GB' -f ((Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue | Measure-Object Capacity -Sum).Sum / 1GB)
+        Graphics = @(Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | ForEach-Object Name) -join ', '
+        'Devices with problems' = @(Get-CimInstance Win32_PnPEntity -ErrorAction SilentlyContinue | Where-Object ConfigManagerErrorCode -ne 0).Count
+    }
+    $cardHtml = foreach ($k in $cards.Keys) {
+        $cls = if ($k -eq 'Devices with problems' -and $cards[$k] -gt 0) { ' class="alert"' }
+        "<div$cls><span>$(Esc $k)</span><strong>$(Esc $cards[$k])</strong></div>"
+    }
+    # No external fonts or scripts: the report must open offline and send nothing anywhere.
+    $css = @'
+:root{color-scheme:light dark;--bg:#f3f4f0;--panel:#fff;--ink:#1b2220;--dim:#626d68;--line:#dde1db;--accent:#0a7565;--ok:#10734f;--w:#955400;--bad:#bf2f28;--code:#f8f9f6}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1312;--panel:#171d1b;--ink:#e6ebe8;--dim:#94a19c;--line:#29322f;--accent:#3fcfb5;--ok:#4cd6a0;--w:#f0b35a;--bad:#ff7a70;--code:#121715}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;display:grid;grid-template-columns:310px minmax(0,1fr);min-height:100vh;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif}
+aside{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:12px;padding:24px 16px;background:var(--panel);border-right:1px solid var(--line)}
+.brand{font-weight:700;font-size:17px;letter-spacing:-.01em}.brand small{display:block;font-weight:400;font-size:12.5px;color:var(--dim)}
+input,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 10px}
+input{width:100%}button{flex:1;cursor:pointer;font-size:13px}button:hover{border-color:var(--accent)}
+input:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tools{display:flex;gap:8px}
+nav{overflow-y:auto;flex:1;margin:0 -6px}
+nav a{display:block;padding:5px 8px;border-radius:6px;color:var(--dim);text-decoration:none;font-size:12.5px;line-height:1.35}
+nav a:hover{background:var(--bg);color:var(--ink)}
+.flag::after{content:"";display:inline-block;width:7px;height:7px;margin-left:7px;border-radius:50%;background:var(--bad);vertical-align:1px}
+main{padding:32px clamp(16px,4vw,48px) 64px;max-width:1500px}
+h1{margin:0;font-size:clamp(24px,3vw,32px);letter-spacing:-.02em;line-height:1.15}
+.meta{margin:6px 0 24px;color:var(--dim)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:28px}
+.cards div{padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.cards span{display:block;font-size:12px;color:var(--dim)}.cards strong{display:block;margin-top:3px;font-weight:600;overflow-wrap:anywhere}
+.cards .alert{border-color:var(--bad)}.cards .alert strong{color:var(--bad)}
+details{margin-bottom:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;scroll-margin-top:12px}
+summary{padding:12px 16px;font-weight:600;cursor:pointer;border-radius:10px}summary:hover{color:var(--accent)}
+.body{padding:0 16px 16px;border-top:1px solid var(--line)}
+h3{margin:22px 0 8px;font-size:13.5px;color:var(--accent);font-family:"Cascadia Mono",Consolas,monospace;font-weight:600;overflow-wrap:anywhere}
+h4{margin:22px 0 8px;font-size:13.5px;overflow-wrap:anywhere}
+dl{display:grid;grid-template-columns:minmax(150px,300px) minmax(0,1fr);margin:0 0 12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+dt,dd{margin:0;padding:4px 10px;font-size:13px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+dt{color:var(--dim);background:var(--code)}dl>:nth-last-child(-n+2){border-bottom:0}
+pre{margin:10px 0;padding:12px;background:var(--code);border:1px solid var(--line);border-radius:8px;overflow-x:auto;font:12.5px/1.5 "Cascadia Mono",Consolas,monospace}
+b.ok{color:var(--ok)}b.w{color:var(--w)}b.bad{color:var(--bad)}
+@media (max-width:820px){body{display:block}aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}nav{max-height:35vh}dl{grid-template-columns:1fr}dt{border-bottom:0;padding-bottom:0;background:none}}
+@media print{aside{display:none}body{display:block}pre{white-space:pre-wrap}details{break-inside:auto}}
+'@
+    $js = @'
+const secs=[...document.querySelectorAll('details')],links=[...document.querySelectorAll('nav a')],q=document.getElementById('q');
+const all=o=>secs.forEach(d=>{d.open=o});
+document.getElementById('open').onclick=()=>all(true);document.getElementById('close').onclick=()=>all(false);
+links.forEach((a,i)=>a.onclick=()=>{secs[i].open=true});
+q.oninput=()=>{const t=q.value.trim().toLowerCase();secs.forEach((d,i)=>{const hit=!t||d.textContent.toLowerCase().includes(t);d.hidden=links[i].hidden=!hit;d.open=!!t&&hit})};
+onbeforeprint=()=>all(true);
+'@
+    @"
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hardware Report - $(Esc $env:COMPUTERNAME)</title><style>$css</style></head>
+<body><aside><div class="brand">Hardware Total Diagnosis<small>$($htmlNav.Count) sections</small></div>
+<input id="q" type="search" placeholder="Filter sections..." aria-label="Filter sections">
+<div class="tools"><button id="open" type="button">Expand all</button><button id="close" type="button">Collapse all</button></div>
+<nav>$($htmlNav -join '')</nav></aside>
+<main><h1>Hardware Report</h1><p class="meta">$(Esc $env:COMPUTERNAME) &middot; $($started.ToString('yyyy-MM-dd HH:mm:ss zzz')) &middot; collected in $elapsed s</p>
+<div class="cards">$($cardHtml -join '')</div>
+$($htmlMain -join "`n")
+</main><script>$js</script></body></html>
+"@ | Out-File -FilePath $OutFile -Encoding utf8
+} else {
+    "`r`nEND OF REPORT ($elapsed s)" | Out-File -FilePath $OutFile -Append -Encoding utf8
+}
 Write-Host "`nDone in $elapsed s. Report: $OutFile"
