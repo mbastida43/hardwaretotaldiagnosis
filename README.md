@@ -18,6 +18,8 @@ Sem instalar nada. Sem senha de administrador. Sem internet.
 [Problemas comuns](#-problemas-comuns) •
 [Glossário](#-glossário)
 
+**[🇺🇸 Read in English](#-hardware-total-diagnosis-1)**
+
 </div>
 
 ---
@@ -301,3 +303,309 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1 -Ou
 ## 📜 Licença
 
 Distribuído sob a [Licença MIT](LICENSE). © 2026 Marlon Bastida.
+
+---
+
+<div align="center">
+
+# 🔍 Hardware Total Diagnosis
+
+**A complete X-ray of your computer in a single text file.**
+
+Nothing to install. No administrator password. No internet.
+
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=for-the-badge)
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?style=for-the-badge)
+![No admin](https://img.shields.io/badge/Admin-not%20required-2EA44F?style=for-the-badge)
+![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+
+[How to use](#-how-to-use-step-by-step) •
+[What is collected](#-what-is-collected) •
+[Privacy](#-privacy) •
+[How to read the report](#-how-to-read-the-report) •
+[Common problems](#-common-problems) •
+[Glossary](#-glossary)
+
+</div>
+
+---
+
+## 💡 What is this?
+
+It is a small, single-file program that **asks Windows everything it knows about the computer's hardware** and writes the answers to a text file.
+
+Think of it as the computer's medical record: processor, memory, graphics card, disks, USB ports, keyboard, mouse, wireless receivers, drivers and recently logged errors, all in one place.
+
+You can use this file to:
+
+- 🧑‍🔧 send to technical support without having to describe the machine;
+- 🔎 compare two computers and find what differs between them;
+- 🧩 investigate why a device works on one machine and fails on another.
+
+### Why is it safe to run?
+
+| | |
+|:--:|---|
+| 👀 | **It only reads information.** It does not change settings, install or delete anything. |
+| 🔓 | **It does not ask for administrator rights.** It works with a standard user, such as the one on a work computer. |
+| 📴 | **It does not use the internet.** Nothing is sent anywhere. The file stays on your computer. |
+| 📄 | **The code is open.** The whole program is in [`Get-HardwareReport.ps1`](Get-HardwareReport.ps1) and can be reviewed. |
+
+---
+
+## 🚀 How to use (step by step)
+
+You do not need to know how to program. There are five steps:
+
+```mermaid
+flowchart LR
+    A["1. Download"] --> B["2. Extract"]
+    B --> C["3. Open PowerShell"]
+    C --> D["4. Paste the command"]
+    D --> E["5. Get the report"]
+```
+
+### 1️⃣ Download the program
+
+On this GitHub page, click the green **`<> Code`** button and then **Download ZIP**.
+
+### 2️⃣ Extract the file
+
+In your Downloads folder, right-click the `.zip` file and choose **Extract All...**.
+
+> [!WARNING]
+> Do not run the program from inside the ZIP without extracting it. Open the extracted folder, where the `Get-HardwareReport.ps1` file is.
+
+### 3️⃣ Open PowerShell in the folder
+
+With the extracted folder open in File Explorer:
+
+1. Click the **address bar** at the top of the window, where the folder path is shown.
+2. Delete what is written there and type `powershell`.
+3. Press **Enter**.
+
+A blue or black window with text will open. That is PowerShell, already in the right folder.
+
+### 4️⃣ Paste the command and press Enter
+
+Copy the line below, **right-click** inside the PowerShell window to paste it, and press **Enter**:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1
+```
+
+The name of each stage appears on the screen as it runs. Collection usually takes from a few seconds to a few minutes.
+
+> [!NOTE]
+> **What does `-ExecutionPolicy Bypass` mean?** Windows usually blocks scripts by default. This option allows the script to run **only in this window, only this time**. No computer setting is changed, which is why you do not need to be an administrator.
+
+### 5️⃣ Get the report
+
+When it finishes, a message like this appears:
+
+```text
+Done in 18 s. Report: C:\Users\you\Downloads\hardwaretotaldiagnosis\HardwareReport_MYPC_20260115_143022.txt
+```
+
+The file is saved **in the same folder as the program** and opens in Notepad. If that folder cannot be written to, it is saved in the user's temporary folder, and the exact path appears in this message.
+
+> [!TIP]
+> **Investigating a wireless keyboard or mouse?** Move the mouse and press a key right before running it. Wireless devices "sleep" to save battery and, in that state, show up as not connected.
+
+---
+
+## 📋 What is collected
+
+| Area | What appears in the report |
+|---|---|
+| 🖥️ **System** | Windows version and build, installed updates, fast startup |
+| 🧬 **Motherboard and BIOS** | Manufacturer, model, BIOS version, firmware type, Secure Boot |
+| ⚙️ **Processor** | Model, cores, frequencies, cache memory |
+| 🧠 **RAM** | Each module: capacity, speed, manufacturer and slot |
+| 🎮 **Video and sound** | Graphics cards, drivers, monitors, connection type, audio devices |
+| 💾 **Storage** | Disks, partitions, drives and controllers |
+| 🔌 **Ports and sensors** | Slots, connectors, buses and available sensors |
+| 🔋 **Power** | Battery, power plan, USB selective suspend, what can wake the PC |
+| 📶 **Radios** | Network adapters, Wi-Fi band and channel, Bluetooth |
+| 🌳 **USB tree** | Map of what is connected to what, with the physical port of each device |
+| ⌨️ **Keyboard and mouse** | Devices, drivers, filters, accessibility settings |
+| 📡 **Logitech receivers** | Which devices are paired with each receiver, with model, serial and firmware |
+| 🕰️ **History** | Devices that were once connected and no longer are |
+| 🛡️ **Policies** | Device installation restrictions applied to the computer |
+| 🧰 **Related software** | Programs, services and processes related to drivers and peripherals |
+| 🚨 **Problems and errors** | Failing devices and hardware events from the last 30 days |
+
+<details>
+<summary><b>What Windows does not provide without administrator rights</b></summary>
+
+<br>
+
+Windows reserves some information for administrators, such as disk health (SMART), temperature and TPM chip data. These items appear in the report as `[unavailable]`, collection continues normally and **this does not indicate a defect**.
+
+</details>
+
+---
+
+## 🔒 Privacy
+
+The report is designed to be shareable, but **it is worth checking it before sending**.
+
+| ✅ Removed automatically | ⚠️ Stays in the report |
+|---|---|
+| User name and computer owner | Computer name |
+| Organization and domain | BIOS and motherboard serial |
+| MAC and Bluetooth addresses | Disk and monitor serials |
+| Wi-Fi network names | USB and wireless device serials |
+| Windows product key and ID | List of drivers and hardware-related programs |
+
+> [!IMPORTANT]
+> The file is plain text. To hide any data, open it in Notepad, delete the passage and save.
+
+---
+
+## 📖 How to read the report
+
+The file is divided into sections with English titles, which makes it easy to send to international technical support. Use **Ctrl+F** in Notepad to jump straight to what you need:
+
+| Search for | To see |
+|---|---|
+| `TOPOLOGY` | The USB tree: what is connected to each port |
+| `PAIRING TABLE` | What is paired with each Logitech wireless receiver |
+| `DEVICES WITH PROBLEMS` | Devices that are failing according to Windows |
+| `EVENT LOGS` | Hardware errors from the last 30 days |
+| `MEMORY` | RAM details |
+| `GPU` | Graphics card and monitors |
+| `STORAGE` | Disks and partitions |
+
+### Example: pairing table
+
+```text
+##### Receiver PID C52B  rev 1211
+Firmware             : 12.11.B0032
+Paired device count  : 2
+Slot 1 : mouse 'Wireless Mouse' wpid=4055 serial=AABBCCDD link=ONLINE (HID++ 4.5)
+Slot 2 : keyboard 'K540/K545' wpid=4076 serial=11223344 link=no link now: asleep, off or out of range (error 0x09)
+```
+
+Each `Slot` is a position on the receiver. In this example, it knows one mouse and one keyboard:
+
+- **`ONLINE`**: the device responded at the time of collection.
+- **`no link now`**: it is paired but did not respond. It may be asleep, off or out of range.
+- **`(empty or not reported)`**: the slot is free or the receiver did not report its contents.
+
+### Markers in the text
+
+| Marker | Meaning |
+|---|---|
+| `[OK]` | Windows considers the device to be working |
+| `[Error]` or `[Unknown]` | Windows detected a problem or does not know the device's state |
+| `[unavailable]` | Information not available, usually due to missing permission or lack of support on the computer |
+| `[cannot open]` | Windows did not allow access to this device. This is common with security keys, for example |
+| `[SECTION FAILED]` | That section failed. The others continue normally |
+
+### Comparing two computers
+
+Generate the report on each machine and open both side by side. The sections always come out in the same order. For an automatic comparison, run:
+
+```powershell
+code --diff .\report_pc1.txt .\report_pc2.txt
+```
+
+This command requires [Visual Studio Code](https://code.visualstudio.com/), but any text comparison tool will do.
+
+---
+
+## 🩺 Common problems
+
+<details>
+<summary><b>"Running scripts is disabled on this system"</b></summary>
+
+<br>
+
+You probably tried to run the file directly. Use the full command from [step 4](#-how-to-use-step-by-step), which includes `-ExecutionPolicy Bypass`.
+
+</details>
+
+<details>
+<summary><b>It is still blocked on a company computer</b></summary>
+
+<br>
+
+If the message mentions group policy or says the program was blocked by the administrator, the restriction was set by the company's IT team. In that case, **ask the IT team to allow it**. You can show them the file, since it is text and can be read in full.
+
+</details>
+
+<details>
+<summary><b>The receiver table came back as <code>[unavailable]</code></b></summary>
+
+<br>
+
+Some corporate computers run PowerShell in "constrained mode". The report is generated almost entirely, but without the pairing table and the list of disconnected devices. To confirm, search for `Language mode` at the start of the file: the expected value is `FullLanguage`.
+
+</details>
+
+<details>
+<summary><b>My keyboard or mouse shows as <code>no link now</code>, but it is working</b></summary>
+
+<br>
+
+It was probably asleep during collection. Move the mouse, press a key and run it again.
+
+</details>
+
+<details>
+<summary><b>I opened PowerShell, but it says it cannot find the file</b></summary>
+
+<br>
+
+PowerShell is not in the right folder. Repeat [step 3](#-how-to-use-step-by-step) from the folder where the `Get-HardwareReport.ps1` file appears.
+
+</details>
+
+---
+
+## 📚 Glossary
+
+| Term | In plain words |
+|---|---|
+| **PowerShell** | The Windows program that runs commands and scripts. It comes preinstalled |
+| **Script** | A text file with instructions the computer carries out |
+| **Administrator** | A type of user allowed to change the system. This program does not need it |
+| **Driver** | The program that teaches Windows how to talk to a device |
+| **Firmware** | The program stored inside the device itself |
+| **BIOS / UEFI** | The motherboard program that starts the computer before Windows |
+| **Receiver** | The small USB adapter that talks to the wireless keyboard or mouse |
+| **Pairing** | The link that makes a receiver recognize a specific device |
+| **USB hub** | A point that splits one USB connection into several. Many are inside the PC itself |
+| **HID** | Short for *Human Interface Device*, the category of keyboards, mice and similar devices |
+| **VID / PID** | Codes that identify the manufacturer and model of a USB device. `046D` is Logitech's |
+| **Serial** | The identification number of one specific unit |
+
+---
+
+## 🛠️ For advanced users
+
+| Option | What it does |
+|---|---|
+| `-OutFile <path>` | Sets where the report is saved |
+| `-SelfTest` | Checks the decoding of receiver replies and exits without generating a report |
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1 -OutFile C:\Temp\report.txt
+```
+
+### Compatibility
+
+| Item | Status |
+|---|---|
+| Windows 10 with PowerShell 5.1 and 7 | ✅ Tested with a non-administrator user |
+| Windows 11 | 🟡 Uses the same Windows features, no recorded test yet |
+| Logitech Unifying receiver (`C52B`) | ✅ Tested |
+| Logitech Bolt receiver (`C548`) | 🟡 Implemented, not yet tested with the device. The raw bytes always appear in the report |
+| PowerShell in constrained mode | 🟡 Partial report, without the pairing table and disconnected devices |
+
+---
+
+## 📜 License
+
+Distributed under the [MIT License](LICENSE). © 2026 Marlon Bastida.
