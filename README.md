@@ -88,7 +88,16 @@ Copie a linha abaixo, clique com o **botão direito** dentro da janela do PowerS
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1
 ```
 
-O programa pergunta o formato do relatório: digite **`TXT`** (texto puro, o padrão ao apertar Enter) ou **`HTML`** (página com menu lateral, resumo e seções recolhíveis, que abre no navegador e funciona sem internet).
+Aparece um menu para escolher o formato do relatório. Use as **setas ↑ e ↓** e confirme com **Enter**, ou aperte direto o número da opção:
+
+```text
+Report format (Up/Down + Enter, or press the number):
+> 1. TXT   plain text, opens in Notepad
+  2. HTML  page with side menu and summary, opens in the browser
+```
+
+- **TXT** é texto puro e já vem selecionado.
+- **HTML** é uma página com menu lateral, resumo e seções recolhíveis, que abre no navegador e funciona sem internet.
 
 Os nomes das etapas vão aparecendo na tela. A coleta costuma levar de alguns segundos a poucos minutos.
 
@@ -397,7 +406,16 @@ Copy the line below, **right-click** inside the PowerShell window to paste it, a
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Get-HardwareReport.ps1
 ```
 
-The program asks for the report format: type **`TXT`** (plain text, the default when you press Enter) or **`HTML`** (a page with a side menu, summary and collapsible sections that opens in the browser and works without internet).
+A menu appears for choosing the report format. Use the **↑ and ↓ arrows** and confirm with **Enter**, or press the option's number directly:
+
+```text
+Report format (Up/Down + Enter, or press the number):
+> 1. TXT   plain text, opens in Notepad
+  2. HTML  page with side menu and summary, opens in the browser
+```
+
+- **TXT** is plain text and comes preselected.
+- **HTML** is a page with a side menu, summary and collapsible sections that opens in the browser and works without internet.
 
 The name of each stage appears on the screen as it runs. Collection usually takes from a few seconds to a few minutes.
 

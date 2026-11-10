@@ -143,6 +143,42 @@ function Read-Ping {
     'unexpected reply'
 }
 
+# Applies one key press to a menu: returns the new 0-based position and whether the choice is confirmed.
+function Step-Menu {
+    param([int]$At, [int]$Count, [int]$Key, [string]$Char)
+    if ($Char -match '^[1-9]$' -and [int]$Char -le $Count) { return ([int]$Char - 1), $true }
+    if ($Key -eq 38) { $At = ($At + $Count - 1) % $Count }
+    elseif ($Key -eq 40) { $At = ($At + 1) % $Count }
+    $At, ($Key -eq 13)
+}
+
+# Throws where nobody can answer (redirected input, -NonInteractive); the caller falls back.
+function Select-Format {
+    if ([Console]::IsInputRedirected -or [Environment]::GetCommandLineArgs() -match '^[-/]noni') { throw 'no console' }
+    $ui = $Host.UI.RawUI
+    $names = 'TXT', 'HTML'
+    $hints = 'plain text, opens in Notepad', 'page with side menu and summary, opens in the browser'
+    $at = 0
+    $draw = {
+        foreach ($i in 0..($names.Count - 1)) {
+            $color = if ($i -eq $at) { @{ ForegroundColor = 'Cyan' } } else { @{} }
+            Write-Host ('{0} {1}. {2,-5} {3}' -f $(if ($i -eq $at) { '>' } else { ' ' }), ($i + 1), $names[$i], $hints[$i]) @color
+        }
+    }
+    Write-Host 'Report format (Up/Down + Enter, or press the number):'
+    & $draw
+    # Read after drawing: the window may have scrolled.
+    $origin = $ui.CursorPosition
+    $origin.Y -= $names.Count
+    do {
+        $key = $ui.ReadKey('NoEcho,IncludeKeyDown')
+        $at, $done = Step-Menu $at $names.Count $key.VirtualKeyCode "$($key.Character)"
+        $ui.CursorPosition = $origin
+        & $draw
+    } until ($done)
+    $names[$at]
+}
+
 if ($SelfTest) {
     # Reply layout captured from a Unifying receiver (C52B), serial replaced.
     $pair = [byte[]](0x11,0xFF,0x83,0xB5,0x20,0x07,0x08,0x40,0x55,0x04,0x02,0x02,0x0C,0,0,0,0,0,0,0)
@@ -168,7 +204,13 @@ if ($SelfTest) {
         ($h -like '*<pre><b class="w">`[unavailable`]</b> denied: x*'),
         ($h -like '*--- --- ---*'),
         ($h -clike '*<b class="ok">`[OK`]</b> <b class="ok">ONLINE</b> Online</pre>*'),
-        ($h -notlike '*<i>*')
+        ($h -notlike '*<i>*'),
+        ((Step-Menu 0 2 40 '') -join ',' -eq '1,False'),
+        ((Step-Menu 0 2 38 '') -join ',' -eq '1,False'),
+        ((Step-Menu 1 2 40 '') -join ',' -eq '0,False'),
+        ((Step-Menu 1 2 13 "`r") -join ',' -eq '1,True'),
+        ((Step-Menu 0 2 50 '2') -join ',' -eq '1,True'),
+        ((Step-Menu 0 2 51 '3') -join ',' -eq '0,False')
     )
     if ($checks -contains $false) { Write-Host "SELFTEST FAILED: $($checks -join ',')"; exit 1 }
     Write-Host 'SELFTEST OK'; exit 0
@@ -178,9 +220,12 @@ $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 if (-not $Format) {
     if ($OutFile) { $Format = if ($OutFile -match '\.html?$') { 'HTML' } else { 'TXT' } }
     else {
-        # Read-Host throws under -NonInteractive; TXT is the default there too.
-        try { do { $answer = "$(Read-Host 'Report format - type TXT or HTML (Enter = TXT)')".Trim() } until ($answer -in '', 'TXT', 'HTML') } catch { $answer = '' }
-        $Format = if ($answer) { $answer } else { 'TXT' }
+        try { $Format = Select-Format }
+        catch {
+            # Read-Host throws under -NonInteractive; TXT is the default there too.
+            try { do { $answer = "$(Read-Host 'Report format - type TXT or HTML (Enter = TXT)')".Trim() } until ($answer -in '', 'TXT', 'HTML') } catch { $answer = '' }
+            $Format = if ($answer) { $answer } else { 'TXT' }
+        }
     }
 }
 $htmlNav = @(); $htmlMain = @()
